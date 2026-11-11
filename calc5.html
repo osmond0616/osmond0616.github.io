@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lakers 紫金六則運算計算器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #121212;
+            margin: 0;
+        }
+        .calculator-card {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(253, 185, 39, 0.2);
+            border: 4px solid #FDB927; /* 湖人金邊框 */
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #552583; /* 湖人紫 */
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #552583;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="number"]:focus {
+            border-color: #FDB927;
+        }
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background-color: #552583; /* 湖人紫按鈕 */
+            color: #FDB927;            /* 金黃字體 */
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        button:hover {
+            background-color: #3f1a63;
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #552583;
+            color: #FDB927;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            word-break: break-all;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator-card">
+    <h2>LAKERS 數值運算器</h2>
+    
+    <div class="input-group">
+        <label for="num1">第一個數字 (A)</label>
+        <input type="number" id="num1" placeholder="請輸入數字 A" step="any">
+    </div>
+    
+    <div class="input-group">
+        <label for="num2">第二個數字 (B)</label>
+        <input type="number" id="num2" placeholder="請輸入數字 B" step="any">
+    </div>
+
+    <div class="btn-grid">
+        <button onclick="calculate('+')">加 (+)</button>
+        <button onclick="calculate('-')">減 (-)</button>
+        <button onclick="calculate('*')">乘 (×)</button>
+        <button onclick="calculate('/')">除 (÷)</button>
+        <button onclick="calculate('%')">取餘數 (%)</button>
+        <button onclick="calculate('//')">整數商 (//)</button>
+    </div>
+
+    <div id="result" class="result-box">計算結果將顯示於此</div>
+</div>
+
+<script>
+    function calculate(operator) {
+        const input1 = document.getElementById('num1').value;
+        const input2 = document.getElementById('num2').value;
+        const resultDiv = document.getElementById('result');
+
+        resultDiv.classList.remove('error');
+
+        if (input1 === '' || input2 === '') {
+            resultDiv.innerText = "請完整輸入兩個數字！";
+            resultDiv.classList.add('error');
+            return;
+        }
+
+        const num1 = parseFloat(input1);
+        const num2 = parseFloat(input2);
+        let result = 0;
+        let symbolText = '';
+
+        if ((operator === '/' || operator === '%' || operator === '//') && num2 === 0) {
+            resultDiv.innerText = "錯誤：除數不能為 0！";
+            resultDiv.classList.add('error');
+            return;
+        }
+
+        switch (operator) {
+            case '+':
+                result = num1 + num2;
+                symbolText = '+';
+                break;
+            case '-':
+                result = num1 - num2;
+                symbolText = '-';
+                break;
+            case '*':
+                result = num1 * num2;
+                symbolText = '×';
+                break;
+            case '/':
+                result = num1 / num2;
+                symbolText = '÷';
+                break;
+            case '%':
+                result = num1 % num2;
+                symbolText = '%';
+                break;
+            case '//':
+                result = Math.floor(num1 / num2);
+                symbolText = '的整數商';
+                break;
+        }
+
+        if (operator === '//') {
+            resultDiv.innerText = `${num1} 與 ${num2} ${symbolText} = ${result}`;
+        } else {
+            resultDiv.innerText = `${num1} ${symbolText} ${num2} = ${result}`;
+        }
+    }
+</script>
+
+</body>
+</html>

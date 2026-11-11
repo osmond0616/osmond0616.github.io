@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數格策略對決 Grid Strategy Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* 網格卡片動畫效果 */
+        .cell-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(1);
+        }
+
+        .cell-btn:not(:disabled):hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .cell-btn:not(:disabled):active {
+            transform: scale(0.95);
+        }
+
+        /* 彈出入場動畫 */
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .selected-pop {
+            animation: popIn 0.25s ease-out forwards;
+        }
+
+        /* 背景微光背景 */
+        .bg-glow {
+            background: radial-gradient(circle at 50% 15%, rgba(59, 130, 246, 0.18) 0%, rgba(15, 23, 42, 0) 70%);
+        }
+    </style>
+</head>
+<body class="bg-glow flex flex-col justify-between items-center p-3 md:p-6 min-h-screen">
+
+    <!-- 主遊戲容器 -->
+    <div class="w-full max-w-4xl flex flex-col items-center gap-4 my-auto">
+        
+        <!-- 標題與簡介 -->
+        <header class="text-center">
+            <h1 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 tracking-wider">
+                <i class="fa-solid fa-border-all mr-2"></i>數格策略對決
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400 mt-1">搶先填滿最後一格者即獲得勝利！</p>
+        </header>
+
+        <!-- 遊戲資訊儀表板 -->
+        <div class="w-full bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-slate-700/60 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-3">
+            <!-- 棋盤規格 (T) -->
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/40 text-center flex flex-col justify-center">
+                <span class="text-xs text-slate-400 block mb-0.5"><i class="fa-solid fa-table-cells mr-1"></i>棋盤規格 (T)</span>
+                <span id="grid-size-display" class="text-lg md:text-xl font-bold text-blue-400">--</span>
+            </div>
+            <!-- 每回合最大數 (R) -->
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/40 text-center flex flex-col justify-center">
+                <span class="text-xs text-slate-400 block mb-0.5"><i class="fa-solid fa-arrows-left-right-to-line mr-1"></i>每回合限制 (R)</span>
+                <span id="range-r-display" class="text-lg md:text-xl font-bold text-indigo-400">1 ~ -- 格</span>
+            </div>
+            <!-- 本回合點擊計數 -->
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/40 text-center flex flex-col justify-center">
+                <span class="text-xs text-slate-400 block mb-0.5"><i class="fa-solid fa-hand-pointer mr-1"></i>本回合已點</span>
+                <span id="turn-click-display" class="text-lg md:text-xl font-bold text-emerald-400">0 格</span>
+            </div>
+            <!-- 目前總累計數 -->
+            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/40 text-center flex flex-col justify-center">
+                <span class="text-xs text-slate-400 block mb-0.5"><i class="fa-solid fa-list-ol mr-1"></i>目前總累計</span>
+                <span id="total-count-display" class="text-lg md:text-xl font-bold text-purple-400">0 / --</span>
+            </div>
+        </div>
+
+        <!-- 當前狀態提示橫條 -->
+        <div id="status-banner" class="w-full bg-slate-800 border-l-4 border-blue-500 rounded-r-xl p-3.5 shadow-lg flex items-center justify-between transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div id="status-icon" class="w-9 h-9 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                    <div id="turn-indicator" class="text-xs text-slate-400 font-medium">當前回合</div>
+                    <div id="status-message" class="text-sm md:text-base font-bold text-slate-100">玩家回合：請選擇 1 到 R 個格子</div>
+                </div>
+            </div>
+            <div id="ai-thinking" class="hidden flex items-center gap-2 text-indigo-400 text-sm font-semibold">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> 電腦思考中...
+            </div>
+        </div>
+
+        <!-- 遊戲棋盤區域 -->
+        <div class="w-full flex flex-col items-center py-2">
+            <div id="grid-container" class="grid gap-2.5 md:gap-3.5 w-full max-w-2xl bg-slate-900/90 p-4 rounded-2xl border border-slate-800 shadow-2xl">
+                <!-- 格子動態生成區域 -->
+            </div>
+        </div>
+
+        <!-- 控制按鈕區 -->
+        <div class="flex flex-wrap md:flex-nowrap items-center justify-center gap-3 w-full max-w-lg mt-1">
+            <!-- 重新開始按鈕 -->
+            <button id="restart-btn" onclick="initGame()" class="flex-1 py-3 px-4 rounded-xl font-bold bg-slate-700 hover:bg-slate-600 text-slate-200 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> 重新開始
+            </button>
+
+            <!-- 重置本輪選取按鈕 -->
+            <button id="reset-turn-btn" onclick="resetCurrentTurnSelections()" class="py-3 px-4 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-400 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrow-rotate-left"></i> 重置本輪
+            </button>
+            
+            <!-- 切換回合按鈕 -->
+            <button id="switch-btn" onclick="handlePlayerSwitch()" class="flex-1 py-3 px-5 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i> 切換回合
+            </button>
+        </div>
+
+    </div>
+
+    <!-- 遊戲結束 Modal 彈窗 -->
+    <div id="result-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl transform scale-90 transition-all duration-300" id="modal-card">
+            <div id="winner-icon" class="w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl mb-4 bg-emerald-500/20 text-emerald-400">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 id="winner-title" class="text-2xl font-black text-white mb-2">勝利！</h2>
+            <p id="winner-description" class="text-slate-300 text-sm mb-6">您成功的填滿了最後一個格子！</p>
+            <button onclick="closeModalAndRestart()" class="w-full py-3.5 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg active:scale-95 transition-all">
+                再玩一局 (隨機關卡)
+            </button>
+        </div>
+    </div>
+
+    <!-- 自訂 Toast 提示訊息方塊 -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-600/95 text-white px-5 py-2.5 rounded-full shadow-2xl text-sm font-bold flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50 border border-red-400/30">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="toast-message">請至少選擇 1 個格子！</span>
+    </div>
+
+    <!-- JavaScript 核心遊戲邏輯 -->
+    <script>
+        // 遊戲核心狀態變數
+        let totalCells = 16;       // 總格子數 N (16, 20, 24, 28, 32)
+        let rows = 4;              // 列數
+        let cols = 4;              // 行數
+        let maxRangeR = 3;         // 每回合最大限制 R (2~5)
+        
+        let currentSequence = 0;   // 當前總計數 (已填格子總數)
+        let turnClickedCount = 0;  // 本回合玩家已點擊的數量
+        let isPlayerTurn = true;   // 是否為玩家回合
+        let isGameOver = false;    // 遊戲是否結束
+        let isAiProcessing = false;// AI 是否執行中
+
+        // 隨機整數產生器 [min, max]
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // 初始化遊戲 (重置規則與盤面)
+        function initGame() {
+            // 1. 隨機選取盤面規格 T (4x4, 5x4, 6x4, 7x4, 8x4 -> 16, 20, 24, 28, 32 格)
+            const rowOptions = [4, 5, 6, 7, 8];
+            rows = rowOptions[getRandomInt(0, rowOptions.length - 1)];
+            cols = 4;
+            totalCells = rows * cols;
+
+            // 2. 隨機選取每回合限制 R (2~5)
+            maxRangeR = getRandomInt(2, 5);
+
+            // 3. 重置內部狀態
+            currentSequence = 0;
+            turnClickedCount = 0;
+            isPlayerTurn = true;
+            isGameOver = false;
+            isAiProcessing = false;
+
+            // 4. 更新 UI 儀表板
+            document.getElementById('grid-size-display').innerText = `${rows}×${cols} (${totalCells}格)`;
+            document.getElementById('range-r-display').innerText = `1 ~ ${maxRangeR} 格`;
+            
+            document.getElementById('switch-btn').disabled = false;
+            document.getElementById('reset-turn-btn').disabled = false;
+            document.getElementById('ai-thinking').classList.add('hidden');
+            
+            hideModal();
+
+            // 5. 繪製盤面
+            renderGrid();
+
+            // 6. 更新資料與訊息
+            updateTurnDisplay();
+            updateSequenceDisplay();
+            updatePlayerStatusPrompt();
+        }
+
+        // 渲染盤面 HTML
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+
+            for (let i = 1; i <= totalCells; i++) {
+                const btn = document.createElement('button');
+                btn.id = `cell-${i}`;
+                btn.dataset.index = i;
+                btn.className = `cell-btn aspect-square rounded-xl md:rounded-2xl border-2 flex items-center justify-center font-black text-lg md:text-2xl transition-all duration-200 bg-slate-800/80 border-slate-700/80 text-slate-500 hover:border-blue-500/50`;
+                
+                btn.onclick = () => handleCellClick(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // 取得目前本回合最大允許選取的格數 (動態調降：防止剩餘格數 < R 時無法切換)
+        function getCurrentMaxAllowed() {
+            const remaining = totalCells - (currentSequence - turnClickedCount);
+            return Math.min(maxRangeR, remaining);
+        }
+
+        // 點擊格子處理
+        function handleCellClick(cellIndex) {
+            if (!isPlayerTurn || isGameOver || isAiProcessing) return;
+
+            const btn = document.getElementById(`cell-${cellIndex}`);
+
+            // 1. 若該格是本輪剛剛暫存選擇的格子 -> 支持取消點擊 (必須為最後點擊的那一格)
+            if (btn.classList.contains('temp-selected')) {
+                if (cellIndex === currentSequence) {
+                    currentSequence--;
+                    turnClickedCount--;
+                    
+                    btn.classList.remove('temp-selected', 'bg-blue-600', 'border-blue-400', 'text-white', 'selected-pop');
+                    btn.classList.add('bg-slate-800/80', 'border-slate-700/80', 'text-slate-500');
+                    btn.innerText = '';
+
+                    updateTurnDisplay();
+                    updateSequenceDisplay();
+                    updatePlayerStatusPrompt();
+                } else {
+                    showToast("請由最後點擊的格子依序取消選取！");
+                }
+                return;
+            }
+
+            // 2. 點擊未選取的格子
+            // 檢查是否已達到本輪最大限制
+            const maxAllowed = getCurrentMaxAllowed();
+            if (turnClickedCount >= maxAllowed) {
+                showToast(`本回合最多只能選擇 ${maxAllowed} 個格子！`);
+                return;
+            }
+
+            // 檢查是否為已確定的格子
+            if (btn.classList.contains('confirmed-selected')) return;
+
+            // 必須照順序連號點擊 (填滿目前數字的下一個)
+            if (cellIndex !== currentSequence + 1) {
+                showToast(`請依順序點擊第 ${currentSequence + 1} 個格子！`);
+                return;
+            }
+
+            // 執行選擇
+            currentSequence++;
+            turnClickedCount++;
+
+            btn.innerText = currentSequence;
+            btn.classList.remove('bg-slate-800/80', 'border-slate-700/80', 'text-slate-500');
+            btn.classList.add('temp-selected', 'bg-blue-600', 'border-blue-400', 'text-white', 'selected-pop');
+
+            updateTurnDisplay();
+            updateSequenceDisplay();
+            updatePlayerStatusPrompt();
+
+            // 若直接點到最後一格，直接獲得勝利
+            if (currentSequence === totalCells) {
+                confirmCurrentTurnSelections('player');
+                endGame('player');
+            }
+        }
+
+        // 重置玩家本輪的暫存點擊
+        function resetCurrentTurnSelections() {
+            if (!isPlayerTurn || isGameOver || isAiProcessing || turnClickedCount === 0) return;
+
+            while (turnClickedCount > 0) {
+                const btn = document.getElementById(`cell-${currentSequence}`);
+                if (btn && btn.classList.contains('temp-selected')) {
+                    btn.classList.remove('temp-selected', 'bg-blue-600', 'border-blue-400', 'text-white', 'selected-pop');
+                    btn.classList.add('bg-slate-800/80', 'border-slate-700/80', 'text-slate-500');
+                    btn.innerText = '';
+                }
+                currentSequence--;
+                turnClickedCount--;
+            }
+
+            updateTurnDisplay();
+            updateSequenceDisplay();
+            updatePlayerStatusPrompt();
+            showToast("已重置本輪選擇！");
+        }
+
+        // 將本輪選取轉為永久確定
+        function confirmCurrentTurnSelections(owner) {
+            const tempCells = document.querySelectorAll('.temp-selected');
+            tempCells.forEach(btn => {
+                btn.classList.remove('temp-selected', 'bg-blue-600', 'bg-purple-600', 'border-blue-400', 'border-purple-400');
+                btn.classList.add('confirmed-selected');
+                
+                if (owner === 'player') {
+                    btn.classList.add('bg-blue-700/90', 'border-blue-500', 'text-blue-100');
+                } else {
+                    btn.classList.add('bg-purple-700/90', 'border-purple-500', 'text-purple-100');
+                }
+                btn.disabled = true;
+            });
+        }
+
+        // 玩家點擊「切換回合」按鈕
+        function handlePlayerSwitch() {
+            if (!isPlayerTurn || isGameOver || isAiProcessing) return;
+
+            const maxAllowed = getCurrentMaxAllowed();
+
+            // 檢查是否符合 1 ~ maxAllowed 規範
+            if (turnClickedCount < 1) {
+                showToast("請至少選擇 1 個格子後再切換！");
+                return;
+            }
+
+            if (turnClickedCount > maxAllowed) {
+                showToast(`本回合選擇不可超過 ${maxAllowed} 格！`);
+                return;
+            }
+
+            // 確定選取
+            confirmCurrentTurnSelections('player');
+
+            // 檢查是否達終點
+            if (currentSequence >= totalCells) {
+                endGame('player');
+                return;
+            }
+
+            // 切換為電腦回合
+            startComputerTurn();
+        }
+
+        // 開始電腦回合
+        function startComputerTurn() {
+            isPlayerTurn = false;
+            turnClickedCount = 0;
+            updateTurnDisplay();
+
+            document.getElementById('switch-btn').disabled = true;
+            document.getElementById('reset-turn-btn').disabled = true;
+            document.getElementById('ai-thinking').classList.remove('hidden');
+
+            updateStatusMessage('電腦思考中...', 'computer');
+
+            // 模擬思考延遲 (600ms~1200ms)
+            isAiProcessing = true;
+            setTimeout(() => {
+                executeComputerMove();
+            }, getRandomInt(600, 1200));
+        }
+
+        // 電腦策略運算 (巴什博弈必勝法)
+        function executeComputerMove() {
+            if (isGameOver) return;
+
+            const remaining = totalCells - currentSequence;
+            let targetCount = 1;
+
+            // Bash Game 最優策略：留給對方的剩餘數為 (R + 1) 的倍數
+            const mod = remaining % (maxRangeR + 1);
+            if (mod !== 0) {
+                targetCount = mod;
+            } else {
+                // 無必勝法時隨機選 1 ~ min(R, remaining)
+                const maxChoose = Math.min(maxRangeR, remaining);
+                targetCount = getRandomInt(1, maxChoose);
+            }
+
+            targetCount = Math.max(1, Math.min(targetCount, remaining, maxRangeR));
+
+            // 動態模擬逐格填入動畫
+            let step = 0;
+            const interval = setInterval(() => {
+                currentSequence++;
+                turnClickedCount++;
+                step++;
+
+                const btn = document.getElementById(`cell-${currentSequence}`);
+                if (btn) {
+                    btn.innerText = currentSequence;
+                    btn.classList.remove('bg-slate-800/80', 'border-slate-700/80', 'text-slate-500');
+                    btn.classList.add('temp-selected', 'bg-purple-600', 'border-purple-400', 'text-white', 'selected-pop');
+                }
+
+                updateTurnDisplay();
+                updateSequenceDisplay();
+
+                if (step >= targetCount || currentSequence >= totalCells) {
+                    clearInterval(interval);
+
+                    setTimeout(() => {
+                        confirmCurrentTurnSelections('computer');
+                        isAiProcessing = false;
+                        document.getElementById('ai-thinking').classList.add('hidden');
+
+                        if (currentSequence >= totalCells) {
+                            endGame('computer');
+                        } else {
+                            // 交還玩家回合
+                            isPlayerTurn = true;
+                            turnClickedCount = 0;
+                            updateTurnDisplay();
+                            document.getElementById('switch-btn').disabled = false;
+                            document.getElementById('reset-turn-btn').disabled = false;
+                            updatePlayerStatusPrompt();
+                        }
+                    }, 350);
+                }
+            }, 250);
+        }
+
+        // 動態顯示玩家回合提示文字
+        function updatePlayerStatusPrompt() {
+            const maxAllowed = getCurrentMaxAllowed();
+            updateStatusMessage(`玩家回合：請選擇 1 到 ${maxAllowed} 個格子`, 'player');
+        }
+
+        // 更新 UI 資料顯示
+        function updateTurnDisplay() {
+            document.getElementById('turn-click-display').innerText = `${turnClickedCount} 格`;
+        }
+
+        function updateSequenceDisplay() {
+            document.getElementById('total-count-display').innerText = `${currentSequence} / ${totalCells}`;
+        }
+
+        // 更新橫條狀態提示資訊
+        function updateStatusMessage(msg, type) {
+            const statusMsg = document.getElementById('status-message');
+            const turnInd = document.getElementById('turn-indicator');
+            const icon = document.getElementById('status-icon');
+            const banner = document.getElementById('status-banner');
+
+            statusMsg.innerText = msg;
+
+            if (type === 'player') {
+                turnInd.innerText = "當前回合";
+                icon.className = "w-9 h-9 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-base";
+                icon.innerHTML = '<i class="fa-solid fa-user"></i>';
+                banner.className = "w-full bg-slate-800 border-l-4 border-blue-500 rounded-r-xl p-3.5 shadow-lg flex items-center justify-between transition-all duration-300";
+            } else if (type === 'computer') {
+                turnInd.innerText = "當前回合";
+                icon.className = "w-9 h-9 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-base";
+                icon.innerHTML = '<i class="fa-solid fa-robot"></i>';
+                banner.className = "w-full bg-slate-800 border-l-4 border-purple-500 rounded-r-xl p-3.5 shadow-lg flex items-center justify-between transition-all duration-300";
+            } else {
+                turnInd.innerText = "對局結束";
+                icon.className = "w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base";
+                icon.innerHTML = '<i class="fa-solid fa-flag-checkered"></i>';
+                banner.className = "w-full bg-slate-800 border-l-4 border-emerald-500 rounded-r-xl p-3.5 shadow-lg flex items-center justify-between transition-all duration-300";
+            }
+        }
+
+        // 結束對局
+        function endGame(winner) {
+            isGameOver = true;
+            document.getElementById('switch-btn').disabled = true;
+            document.getElementById('reset-turn-btn').disabled = true;
+
+            const modal = document.getElementById('result-modal');
+            const card = document.getElementById('modal-card');
+            const icon = document.getElementById('winner-icon');
+            const title = document.getElementById('winner-title');
+            const desc = document.getElementById('winner-description');
+
+            if (winner === 'player') {
+                updateStatusMessage('遊戲結束：恭喜玩家獲得勝利！ 🎉', 'result');
+                icon.className = "w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl mb-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                icon.innerHTML = '<i class="fa-solid fa-trophy"></i>';
+                title.innerText = '恭喜獲勝！';
+                title.className = "text-2xl font-black text-emerald-400 mb-2";
+                desc.innerText = `您順利填滿了第 ${totalCells} 個格子，贏得了這場策略對決！`;
+            } else {
+                updateStatusMessage('遊戲結束：電腦獲得了勝利！ 🤖', 'result');
+                icon.className = "w-20 h-20 rounded-full mx-auto flex items-center justify-center text-4xl mb-4 bg-purple-500/20 text-purple-400 border border-purple-500/30";
+                icon.innerHTML = '<i class="fa-solid fa-robot"></i>';
+                title.innerText = '電腦獲勝！';
+                title.className = "text-2xl font-black text-purple-400 mb-2";
+                desc.innerText = `電腦填滿了最後第 ${totalCells} 個格子。再試一把，掌握必勝規律吧！`;
+            }
+
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                card.classList.remove('scale-90');
+                card.classList.add('scale-100');
+            }, 300);
+        }
+
+        function closeModalAndRestart() {
+            hideModal();
+            initGame();
+        }
+
+        function hideModal() {
+            const modal = document.getElementById('result-modal');
+            const card = document.getElementById('modal-card');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-90');
+        }
+
+        // 自訂 Toast 提示
+        let toastTimeout = null;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            
+            toastMsg.innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2200);
+        }
+
+        // 初始化
+        window.onload = function() {
+            initGame();
+        };
+    </script>
+</body>
+</html>

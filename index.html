@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App 數位遊戲與工具集錦</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        darkBg: '#09090b',
+                        cardBg: '#18181b',
+                        borderBorder: '#27272a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* 背景網格圖案與漸層 */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* 玻璃擬態卡片 */
+        .glass-card {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7), 0 0 20px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        /* 浮光掠影按鈕效果 */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transform: rotate(30deg) translateY(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .btn-glow:hover::after {
+            transform: rotate(30deg) translateY(100%);
+        }
+    </style>
+</head>
+<div class="min-h-screen bg-grid flex flex-col justify-between relative selection:bg-white selection:text-black">
+
+    <!-- 背景光暈飾影 -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <!-- 頁眉 Header -->
+    <header class="w-full border-b border-zinc-800/80 backdrop-blur-md sticky top-0 z-50 bg-black/40">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold text-xl">
+                    <i class="fa-solid fa-shapes text-sm"></i>
+                </div>
+                <span class="font-bold tracking-wider text-lg uppercase text-white">WEB APP PORTAL</span>
+            </div>
+            <div class="text-xs text-zinc-400 border border-zinc-700/60 rounded-full px-3 py-1 bg-zinc-900/50">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>3 Apps Ready
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區區段 -->
+    <main class="max-w-7xl mx-auto px-6 py-12 md:py-16 flex-grow w-full">
+        
+        <!-- 主標題與介紹 -->
+        <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                精選互動式 <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-300 to-zinc-500">Web Apps</span> 集錦
+            </h1>
+            <p class="text-zinc-400 text-base md:text-lg leading-relaxed font-light">
+                匯集強大實用的計算工具與具備策略思考的趣味對戰遊戲。隨時點擊開啟體驗！
+            </p>
+        </div>
+
+        <!-- 卡片列表 Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <!-- Card 1: 紫金六則運算計算器 -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+                <div>
+                    <!-- 標籤與圖示 -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-purple-950/60 border border-purple-500/30 text-amber-300 flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 font-medium">
+                            實用工具
+                        </span>
+                    </div>
+
+                    <!-- 標題與簡介 -->
+                    <h2 class="text-xl font-bold text-white mb-2 group-hover:text-amber-200 transition-colors">
+                        紫金六則運算計算器
+                    </h2>
+                    <p class="text-zinc-400 text-sm leading-relaxed mb-6 font-light">
+                        專為高效計算打造的質感計算器，融入高雅紫金視覺風格，除了基本加減乘除外，更擴充高級六則運算功能。
+                    </p>
+
+                    <!-- 特性標籤 -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">六則運算</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">紫金主題</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">快速響應</span>
+                    </div>
+                </div>
+
+                <!-- 開啟按鈕 -->
+                <a href="calc5.html" class="btn-glow w-full py-3 px-4 rounded-xl bg-white text-black font-semibold text-center flex items-center justify-center space-x-2 hover:bg-zinc-200 active:scale-[0.98] transition-all">
+                    <span>開啟工具</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+            <!-- Card 2: 搶 T 遊戲 -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+                <div>
+                    <!-- 標籤與圖示 -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700 text-white flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium">
+                            益智對弈
+                        </span>
+                    </div>
+
+                    <!-- 標題與簡介 -->
+                    <h2 class="text-xl font-bold text-white mb-2 group-hover:text-zinc-200 transition-colors">
+                        搶 T 遊戲 (Nim Easy)
+                    </h2>
+                    <p class="text-zinc-400 text-sm leading-relaxed mb-6 font-light">
+                        經典的 Nim 數學博弈遊戲，規則簡單卻極具心機！與電腦或好友回合制搶拿 Target，先拿到目標者即獲勝。
+                    </p>
+
+                    <!-- 特性標籤 -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">數學賽局</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">輕鬆上手</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">邏輯思維</span>
+                    </div>
+                </div>
+
+                <!-- 開啟按鈕 -->
+                <a href="c2n-easy.html" class="btn-glow w-full py-3 px-4 rounded-xl bg-white text-black font-semibold text-center flex items-center justify-center space-x-2 hover:bg-zinc-200 active:scale-[0.98] transition-all">
+                    <span>開始遊戲</span>
+                    <i class="fa-solid fa-gamepad text-xs"></i>
+                </a>
+            </div>
+
+            <!-- Card 3: 策略數格大對決 -->
+            <div class="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+                <div>
+                    <!-- 標籤與圖示 -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700 text-white flex items-center justify-center text-xl shadow-inner">
+                            <i class="fa-solid fa-border-all"></i>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 font-medium">
+                            進階策略
+                        </span>
+                    </div>
+
+                    <!-- 標題與簡介 -->
+                    <h2 class="text-xl font-bold text-white mb-2 group-hover:text-zinc-200 transition-colors">
+                        策略數格大對決
+                    </h2>
+                    <p class="text-zinc-400 text-sm leading-relaxed mb-6 font-light">
+                        基於棋盤網格的深層策略遊戲。考量區域封鎖與版圖佔領，步步為營考驗玩家的空間掌控與全局謀略。
+                    </p>
+
+                    <!-- 特性標籤 -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">網格對戰</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">空間對弈</span>
+                        <span class="text-[11px] bg-zinc-800/80 text-zinc-300 px-2.5 py-1 rounded-md border border-zinc-700/50">腦力升級</span>
+                    </div>
+                </div>
+
+                <!-- 開啟按鈕 -->
+                <a href="c2n-grid.html" class="btn-glow w-full py-3 px-4 rounded-xl bg-white text-black font-semibold text-center flex items-center justify-center space-x-2 hover:bg-zinc-200 active:scale-[0.98] transition-all">
+                    <span>挑戰對決</span>
+                    <i class="fa-solid fa-chess-board text-xs"></i>
+                </a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 頁尾 Footer -->
+    <footer class="w-full border-t border-zinc-800/60 py-6 text-center text-xs text-zinc-500">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>© Web Application Collection. All rights reserved.</p>
+            <p class="flex items-center gap-2">
+                <span>Designed with Minimalist Black & White Theme</span>
+            </p>
+        </div>
+    </footer>
+
+</div>
+</body>
+</html>

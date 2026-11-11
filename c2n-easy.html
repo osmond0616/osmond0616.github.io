@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搶 T 遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 20px;
+            padding: 15px 30px;
+            border: 2px solid #3e8e41;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+        .game-section {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .info-card {
+            background: #eef2f5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .history-box {
+            background-color: #fafafa;
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 6px;
+            min-height: 80px;
+            font-family: monospace;
+            font-size: 16px;
+            line-height: 1.8;
+            letter-spacing: 2px;
+        }
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        select, input, button {
+            padding: 8px 12px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .action-btn {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        .action-btn:hover {
+            background-color: #007bb5;
+        }
+        .result-msg {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .win { color: #27ae60; }
+        .lose { color: #e74c3c; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>搶 T 遊戲</h1>
+    
+    <!-- 開始遊戲入口方格 -->
+    <div id="start-screen">
+        <button class="start-btn" onclick="startGame()">開始遊戲</button>
+    </div>
+
+    <!-- 遊戲主畫面 -->
+    <div id="game-screen" class="game-section">
+        <div class="info-card">
+            <div>目標點數 T：<span id="target-T" style="color: #e67e22;">-</span></div>
+            <div style="margin-top: 5px;">
+                請選擇 R (1~R): 
+                <select id="select-R" onchange="initGameConfig()">
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="status-msg" style="font-weight: bold; margin-bottom: 8px;">請選擇你要喊幾個數：</div>
+
+        <div class="controls" id="input-area">
+            <select id="player-count"></select>
+            <button class="action-btn" onclick="playerTurn()">確定報數</button>
+        </div>
+
+        <p style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">報數歷程 (每 5 個換行)：</p>
+        <div class="history-box" id="history-display">尚無報數</div>
+
+        <div class="info-card" style="margin-top: 15px;">
+            目前累加結果：<span id="current-total" style="color: #2980b9;">0</span>
+        </div>
+
+        <div id="result-area" class="result-msg"></div>
+        
+        <button id="restart-btn" class="action-btn" style="width: 100%; margin-top: 15px; display: none;" onclick="startGame()">再玩一次</button>
+    </div>
+</div>
+
+<script>
+    let T = 0;
+    let R = 3;
+    let currentTotal = 0;
+    let history = [];
+    let isGameOver = false;
+
+    // 開始遊戲（初始化點數 T 與遊戲設定）
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('restart-btn').style.display = 'none';
+        document.getElementById('input-area').style.display = 'flex';
+        document.getElementById('result-area').innerText = '';
+
+        // 亂數從 10~30 選一個整數做為 T
+        T = Math.floor(Math.random() * (30 - 10 + 1)) + 10;
+        document.getElementById('target-T').innerText = T;
+
+        currentTotal = 0;
+        history = [];
+        isGameOver = false;
+
+        initGameConfig();
+        updateDisplay();
+    }
+
+    // 當改變 R 時更新選單選項
+    function initGameConfig() {
+        R = parseInt(document.getElementById('select-R').value);
+        const select = document.getElementById('player-count');
+        select.innerHTML = '';
+        for (let i = 1; i <= R; i++) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = `報 ${i} 個數`;
+            select.appendChild(opt);
+        }
+    }
+
+    // 玩家回合
+    function playerTurn() {
+        if (isGameOver) return;
+
+        const count = parseInt(document.getElementById('player-count').value);
+        addNumbers(count);
+
+        if (currentTotal >= T) {
+            endGame("player");
+            return;
+        }
+
+        // 輪到電腦
+        document.getElementById('input-area').style.display = 'none';
+        document.getElementById('status-msg').innerText = "🤖 電腦思考中...";
+        
+        setTimeout(computerTurn, 800);
+    }
+
+    // 電腦回合 (必勝策略 AI)
+    function computerTurn() {
+        if (isGameOver) return;
+
+        let target = currentTotal % (R + 1);
+        let count = 0;
+        
+        if (target !== 0) {
+            count = (R + 1) - target;
+        } else {
+            count = Math.floor(Math.random() * R) + 1;
+        }
+
+        // 限制不能超出剩餘數量與 R
+        count = Math.min(count, R, T - currentTotal);
+        if (count < 1) count = 1;
+
+        addNumbers(count);
+
+        if (currentTotal >= T) {
+            endGame("computer");
+            return;
+        }
+
+        document.getElementById('input-area').style.display = 'flex';
+        document.getElementById('status-msg').innerText = "請選擇你要喊幾個數：";
+    }
+
+    // 累加數值並記錄歷史
+    function addNumbers(count) {
+        for (let i = 0; i < count; i++) {
+            currentTotal++;
+            history.push(currentTotal);
+            if (currentTotal >= T) break;
+        }
+        updateDisplay();
+    }
+
+    // 更新介面（自動處理每 5 個數字換行）
+    function updateDisplay() {
+        document.getElementById('current-total').innerText = currentTotal;
+
+        let historyHTML = "";
+        for (let i = 0; i < history.length; i++) {
+            // 補齊兩位數對齊
+            let numStr = history[i].toString().padStart(2, ' ');
+            historyHTML += numStr + " ";
+            
+            // 每 5 個數自動換行
+            if ((i + 1) % 5 === 0) {
+                historyHTML += "<br>";
+            }
+        }
+        document.getElementById('history-display').innerHTML = historyHTML || "尚無報數";
+    }
+
+    // 結束遊戲判斷勝負
+    function endGame(winner) {
+        isGameOver = true;
+        document.getElementById('input-area').style.display = 'none';
+        document.getElementById('status-msg').innerText = "遊戲結束！";
+        
+        const resultArea = document.getElementById('result-area');
+        if (winner === "player") {
+            resultArea.className = "result-msg win";
+            resultArea.innerText = "恭喜獲勝!";
+        } else {
+            resultArea.className = "result-msg lose";
+            resultArea.innerText = "電腦獲勝!";
+        }
+
+        document.getElementById('restart-btn').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
